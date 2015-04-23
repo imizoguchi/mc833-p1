@@ -75,13 +75,13 @@ int main(int argc, char *argv[])
 
     inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
             s, sizeof s);
-    printf("client: connecting to %s\n", s);
+    //printf("client: connecting to %s\n", s);
 
     freeaddrinfo(servinfo); // all done with this structure
 
     send(sockfd, "admin qwerty\n", 13, 0);
 
-    for(int i = 0; i < 31; i++) {
+
         struct timeval time_in, time_out;
         gettimeofday(&time_in,NULL);
         switch(atoi(argv[2])) {
@@ -127,8 +127,8 @@ int main(int argc, char *argv[])
         time1 = time_in.tv_sec + 0.000001*time_in.tv_usec;
         time2 = time_out.tv_sec + 0.000001*time_out.tv_usec;
         printf("%lf\n", time2-time1);
-        usleep(200000);
-    }
+
+
 
     send(sockfd, "exit\n", 5, 0);
 
