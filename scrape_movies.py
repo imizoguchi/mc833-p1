@@ -2,7 +2,7 @@ import json
 import re
 from random import randint
 
-with open('movies.json') as data_file:    
+with open('movies2.json') as data_file:    
     data = json.load(data_file)
 
 genre = ["Comedy", "Drama", "Action", "Romance", "Animation", "Horror"]
