@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
         time1 = time_in.tv_sec + 0.000001*time_in.tv_usec;
         time2 = time_out.tv_sec + 0.000001*time_out.tv_usec;
         printf("%lf\n", time2-time1);
-        usleep(200000);
+        usleep(1000000);
     }
 
     send(sockfd, "exit\n", 5, 0);

@@ -350,6 +350,7 @@ int handle_command(int sockfd, char *command) {
             } else {
                 while(token != NULL) {
                     args[count] = strdup(token);
+                    printf("%s ", args[count]);
                     count++;
                     token = strtok_r(NULL, " ", &saveptr_tok);
                 }
@@ -370,7 +371,7 @@ int handle_command(int sockfd, char *command) {
     // usec are microseconds!
     time1 = time_in.tv_sec + 0.000001*time_in.tv_usec;
     time2 = time_out.tv_sec + 0.000001*time_out.tv_usec;
-    printf("%lf\n", time2-time1);
+    printf("execution time: %lf\n", time2-time1);
     send_response(sockfd,info);
     return 1;
 }
@@ -393,7 +394,7 @@ void *handle_client(void *sock) {
             while(command != NULL) {
                 if(command[strlen(command)-1] == '\r')
                     command[strlen(command)-1] = '\0';
-                // printf("server: received command '%s'\n",command);
+                printf("server: received command '%s'\n",command);
                 response = handle_command(sockfd, command);
                 if(response == 0) {
                     close(sockfd);
