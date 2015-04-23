@@ -79,9 +79,9 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(servinfo); // all done with this structure
 
-    if (send(sockfd, "admin qwerty\n", 13, 0) == -1)
+    send(sockfd, "admin qwerty\n", 13, 0);
 
-    for(int i = 0; i < 30; i++) {
+    for(int i = 0; i < 31; i++) {
         struct timeval time_in, time_out;
         gettimeofday(&time_in,NULL);
         switch(atoi(argv[2])) {
@@ -127,6 +127,7 @@ int main(int argc, char *argv[])
         time1 = time_in.tv_sec + 0.000001*time_in.tv_usec;
         time2 = time_out.tv_sec + 0.000001*time_out.tv_usec;
         printf("%lf\n", time2-time1);
+        usleep(200000);
     }
 
     send(sockfd, "exit\n", 5, 0);
