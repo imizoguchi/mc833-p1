@@ -15,6 +15,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <pthread.h>
 
 #define MAXDATASIZE 1000 // max number of bytes we can get at once 
 #define PORT "3490"  // the port users will be connecting to
@@ -31,7 +32,7 @@ typedef struct movie {
 } Movie;
 
 
-void handle_client(int socketfd);
+void handle_client(void *sock);
 void send_response(int sockfd, char *response);
 char *concat(int count, ...);
 
@@ -41,6 +42,7 @@ char *movie_projection(Movie movie, char **projection, int num_args);
 Movie *movie;
 int movie_count;
 int is_root = 0;
+pthread_mutex_t lock;
 
 void initialize_data() {
 
@@ -50,7 +52,6 @@ void initialize_data() {
 
     FILE *F = fopen("data.xls", "r");
     while(fgets(buffer, sizeof buffer, F)) {
-        printf("%s\n", buffer);
         char *data = strtok(buffer, ";");
         movie[movie_count].id = strtol(data, NULL, 10);
         movie[movie_count].title = strdup(strtok(NULL, ";"));
@@ -103,6 +104,13 @@ int main(void)
     int yes=1;
     char s[INET6_ADDRSTRLEN];
     int rv;
+
+    // Initialize mutex
+    if (pthread_mutex_init(&lock, NULL) != 0)
+    {
+        printf("\n mutex init failed\n");
+        return 1;
+    }
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -175,14 +183,13 @@ int main(void)
             s, sizeof s);
         printf("server: got connection from %s\n", s);
 
-        if (!fork()) { // this is the child process
-            close(sockfd); // child doesn't need the listener
-            handle_client(new_fd);
-            close(new_fd);
-            exit(0);
-        }
-        close(new_fd);  // parent doesn't need this
+        pthread_t thread;
+        printf("handle %d\n", new_fd);
+        int rc = pthread_create(&thread, NULL,
+                          handle_client, (void *)new_fd);
     }
+
+    pthread_mutex_destroy(&lock);
 
     return 0;
 }
@@ -246,6 +253,7 @@ int handle_command(int sockfd, char *command) {
             _num_copies:    number of copies to be reserved */
         } else if(strcmp(token, "reserve") == 0) {
             if(is_root) {
+                pthread_mutex_lock(&lock);
                 token = strtok_r(NULL, " ", &saveptr_tok);
                 if(token == NULL) return -1;
 
@@ -268,6 +276,7 @@ int handle_command(int sockfd, char *command) {
                         break;
                     }
                 }
+                pthread_mutex_unlock(&lock);
             } else return -2;
 
         /* return a number of copies of a specific movie. Can be
@@ -276,6 +285,8 @@ int handle_command(int sockfd, char *command) {
             _num_copies:    number of copies to be freed */
         } else if(strcmp(token, "return") == 0) {
             if(is_root) {
+                pthread_mutex_lock(&lock);
+                sleep(10);
                 token = strtok_r(NULL, " ", &saveptr_tok);
                 if(token == NULL) return -1;
                 int id = strtol(token, NULL, 10);
@@ -290,6 +301,7 @@ int handle_command(int sockfd, char *command) {
                         break;
                     }
                 }
+                pthread_mutex_unlock(&lock);
             } else return -2;
 
         /* Get the number of copies of a specific movie.
@@ -339,7 +351,9 @@ int handle_command(int sockfd, char *command) {
     return 1;
 }
 
-void handle_client(int sockfd) {
+void handle_client(void *sock) {
+    int sockfd = (int)sock;
+    printf("handle %d\n", sockfd);
     char buf[MAXDATASIZE];
     char *command, *token, *saveptr_cmd, *saveptr_tok;
     int numbytes, response;
@@ -357,9 +371,11 @@ void handle_client(int sockfd) {
             command = strtok_r(buf, "\n",&saveptr_cmd);
             while(command != NULL) {
                 response = handle_command(sockfd, command);
-                if(response == 0)
+                if(response == 0) {
+                    close(sockfd);
+                    pthread_exit(0);
                     return;
-                else if(response == -1) {
+                } else if(response == -1) {
                     send_response(sockfd, "*** missing arguments\n\n");
                 } else if(response == -2) {
                     send_response(sockfd, "*** Access denied. Login as admin to perform this operation.\n\n");
