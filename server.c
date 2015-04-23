@@ -16,6 +16,7 @@
 #include <signal.h>
 #include <stdarg.h>
 #include <pthread.h>
+#include <sys/time.h>
 
 #define MAXDATASIZE 1000 // max number of bytes we can get at once 
 #define PORT "3490"  // the port users will be connecting to
@@ -32,7 +33,7 @@ typedef struct movie {
 } Movie;
 
 
-void handle_client(void *sock);
+void *handle_client(void *sock);
 void send_response(int sockfd, char *response);
 char *concat(int count, ...);
 
@@ -184,9 +185,8 @@ int main(void)
         printf("server: got connection from %s\n", s);
 
         pthread_t thread;
-        printf("handle %d\n", new_fd);
         int rc = pthread_create(&thread, NULL,
-                          handle_client, (void *)new_fd);
+                          handle_client, (void *)&new_fd);
     }
 
     pthread_mutex_destroy(&lock);
@@ -197,6 +197,9 @@ int main(void)
 int handle_command(int sockfd, char *command) {
     char *token, *saveptr_tok, *info;
     char *args[10];
+
+    struct timeval time_in, time_out;
+    gettimeofday(&time_in,NULL);
 
     info = "";
                 
@@ -286,7 +289,6 @@ int handle_command(int sockfd, char *command) {
         } else if(strcmp(token, "return") == 0) {
             if(is_root) {
                 pthread_mutex_lock(&lock);
-                sleep(10);
                 token = strtok_r(NULL, " ", &saveptr_tok);
                 if(token == NULL) return -1;
                 int id = strtol(token, NULL, 10);
@@ -347,13 +349,20 @@ int handle_command(int sockfd, char *command) {
         }
     }
 
+    gettimeofday(&time_out,NULL);
+
+    double time1, time2;
+
+    // usec are microseconds!
+    time1 = time_in.tv_sec + 0.000001*time_in.tv_usec;
+    time2 = time_out.tv_sec + 0.000001*time_out.tv_usec;
+    printf("Command execution time: %lf\n", time2-time1);
     send_response(sockfd,info);
     return 1;
 }
 
-void handle_client(void *sock) {
-    int sockfd = (int)sock;
-    printf("handle %d\n", sockfd);
+void *handle_client(void *sock) {
+    int sockfd = *((int *)sock);
     char buf[MAXDATASIZE];
     char *command, *token, *saveptr_cmd, *saveptr_tok;
     int numbytes, response;
@@ -361,20 +370,20 @@ void handle_client(void *sock) {
     while(1) {
         if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
             perror("recv");
-            exit(1);
+            pthread_exit(0);
 
         } else {
-            buf[numbytes-2] = '\0';
-            printf("client: received '%s'\n",buf);
-
+            buf[numbytes] = '\0';
             // Parse commands separated by linefeeds
             command = strtok_r(buf, "\n",&saveptr_cmd);
             while(command != NULL) {
+                if(command[strlen(command)-1] == '\r')
+                    command[strlen(command)-1] = '\0';
+                printf("client: received command '%s'\n",command);
                 response = handle_command(sockfd, command);
                 if(response == 0) {
                     close(sockfd);
                     pthread_exit(0);
-                    return;
                 } else if(response == -1) {
                     send_response(sockfd, "*** missing arguments\n\n");
                 } else if(response == -2) {

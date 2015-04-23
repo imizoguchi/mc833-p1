@@ -11,13 +11,13 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include <pthread.h>
+#include <sys/time.h>
 
 #include <arpa/inet.h>
 
 #define PORT "3490" // the port client will be connecting to 
 
-#define MAXDATASIZE 1000 // max number of bytes we can get at once 
+#define MAXDATASIZE 100000 // max number of bytes we can get at once 
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -37,8 +37,8 @@ int main(int argc, char *argv[])
     int rv;
     char s[INET6_ADDRSTRLEN];
 
-    if (argc != 2) {
-        fprintf(stderr,"usage: client hostname\n");
+    if (argc != 3) {
+        fprintf(stderr,"usage: client hostname action\n");
         exit(1);
     }
 
@@ -79,17 +79,48 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(servinfo); // all done with this structure
 
+for(int i = 0; i < 30; i++) {
+    struct timeval time_in, time_out;
+    gettimeofday(&time_in,NULL);
+    switch(atoi(argv[2])) {
+        case 0:
+            if (send(sockfd, "list\n", 4, 0) == -1)
+                perror("send");
+            break;
+        case 1:
+            if (send(sockfd, "Hello, world!", 13, 0) == -1)
+                perror("send");
+            break;
+        case 2:
+            if (send(sockfd, "Hello, world!", 13, 0) == -1)
+                perror("send");
+            break;
+        case 3:
+            if (send(sockfd, "Hello, world!", 13, 0) == -1)
+                perror("send");
+            break;
+        case 4:
+            if (send(sockfd, "Hello, world!", 13, 0) == -1)
+                perror("send");
+            break;
+        case 5:
+            if (send(sockfd, "Hello, world!", 13, 0) == -1)
+                perror("send");
+            break;
+    }
     if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
         perror("recv");
         exit(1);
     }
+    gettimeofday(&time_out,NULL);
 
-    buf[numbytes] = '\0';
+    double time1, time2;
 
-    printf("client: received '%s'\n",buf);
-
-    if (send(sockfd, "Hello, world!", 13, 0) == -1)
-        perror("send");
+    // usec are microseconds!
+    time1 = time_in.tv_sec + 0.000001*time_in.tv_usec;
+    time2 = time_out.tv_sec + 0.000001*time_out.tv_usec;
+    printf("Command execution time: %lf\n", time2-time1);
+}
 
     close(sockfd);
 
