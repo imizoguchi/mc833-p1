@@ -324,6 +324,21 @@ int handle_command(int sockfd, char *command) {
         /* Get specific information of all movies.
             _id:    id of the desired movie's synopsis
             args*:  the projection to be returned */
+        } else if(strcmp(token, "genre") == 0) {
+
+            int count = 0;
+            token = strtok_r(NULL, " ", &saveptr_tok);
+            if(token == NULL) return -1;
+            
+            for(int i = 0; i < movie_count; i++) {
+                if(strcmp(movie[i].genre,token) == 0) {
+                    info = concat(2, info, movie_to_string(movie[i]));
+                }
+            }
+
+        /* Get specific information of all movies.
+            _id:    id of the desired movie's synopsis
+            args*:  the projection to be returned */
         } else if(strcmp(token, "list") == 0) {
 
             int count = 0;
@@ -356,7 +371,7 @@ int handle_command(int sockfd, char *command) {
     // usec are microseconds!
     time1 = time_in.tv_sec + 0.000001*time_in.tv_usec;
     time2 = time_out.tv_sec + 0.000001*time_out.tv_usec;
-    printf("Command execution time: %lf\n", time2-time1);
+    printf("execution time: %lf\n", time2-time1);
     send_response(sockfd,info);
     return 1;
 }
@@ -379,11 +394,12 @@ void *handle_client(void *sock) {
             while(command != NULL) {
                 if(command[strlen(command)-1] == '\r')
                     command[strlen(command)-1] = '\0';
-                printf("client: received command '%s'\n",command);
+                printf("server: received command '%s'\n",command);
                 response = handle_command(sockfd, command);
                 if(response == 0) {
                     close(sockfd);
                     pthread_exit(0);
+
                 } else if(response == -1) {
                     send_response(sockfd, "*** missing arguments\n\n");
                 } else if(response == -2) {
@@ -394,10 +410,9 @@ void *handle_client(void *sock) {
                 }
                 command = strtok_r(NULL, "\n", &saveptr_cmd);
             }
-
-            // Treat each command separately
         } // else case that there are things yet to be sent
     }
+    pthread_exit(0);
 }
 
 char *movie_to_string(Movie movie) {

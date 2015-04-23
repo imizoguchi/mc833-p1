@@ -79,48 +79,57 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(servinfo); // all done with this structure
 
-for(int i = 0; i < 30; i++) {
-    struct timeval time_in, time_out;
-    gettimeofday(&time_in,NULL);
-    switch(atoi(argv[2])) {
-        case 0:
-            if (send(sockfd, "list\n", 4, 0) == -1)
-                perror("send");
-            break;
-        case 1:
-            if (send(sockfd, "Hello, world!", 13, 0) == -1)
-                perror("send");
-            break;
-        case 2:
-            if (send(sockfd, "Hello, world!", 13, 0) == -1)
-                perror("send");
-            break;
-        case 3:
-            if (send(sockfd, "Hello, world!", 13, 0) == -1)
-                perror("send");
-            break;
-        case 4:
-            if (send(sockfd, "Hello, world!", 13, 0) == -1)
-                perror("send");
-            break;
-        case 5:
-            if (send(sockfd, "Hello, world!", 13, 0) == -1)
-                perror("send");
-            break;
-    }
-    if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-        perror("recv");
-        exit(1);
-    }
-    gettimeofday(&time_out,NULL);
+    if (send(sockfd, "admin qwerty\n", 13, 0) == -1)
 
-    double time1, time2;
+    for(int i = 0; i < 30; i++) {
+        struct timeval time_in, time_out;
+        gettimeofday(&time_in,NULL);
+        switch(atoi(argv[2])) {
+            case 0:
+                if (send(sockfd, "list title launchdate\n", 22, 0) == -1)
+                    perror("send");
+                break;
+            case 1:
+                if (send(sockfd, "genre Comedy\n", 13, 0) == -1)
+                    perror("send");
+                break;
+            case 2:
+                if (send(sockfd, "synopsis 10\n", 12, 0) == -1)
+                    perror("send");
+                break;
+            case 3:
+                if (send(sockfd, "get 11\n", 7, 0) == -1)
+                    perror("send");
+                break;
+            case 4:
+                if (send(sockfd, "list\n", 5, 0) == -1)
+                    perror("send");
+                break;
+            case 5:
+                if (send(sockfd, "reserve 12 1\n", 13, 0) == -1)
+                    perror("send");
+                break;
+            case 6:
+                if (send(sockfd, "copies 13\n", 10, 0) == -1)
+                    perror("send");
+                break;
+        }
+        if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
+            perror("recv");
+            exit(1);
+        }
 
-    // usec are microseconds!
-    time1 = time_in.tv_sec + 0.000001*time_in.tv_usec;
-    time2 = time_out.tv_sec + 0.000001*time_out.tv_usec;
-    printf("Command execution time: %lf\n", time2-time1);
-}
+        gettimeofday(&time_out,NULL);
+
+        double time1, time2;
+
+        // usec are microseconds!
+        time1 = time_in.tv_sec + 0.000001*time_in.tv_usec;
+        time2 = time_out.tv_sec + 0.000001*time_out.tv_usec;
+        printf("%lf\n", time2-time1);
+    }
+
+    send(sockfd, "exit\n", 5, 0);
 
     close(sockfd);
 
